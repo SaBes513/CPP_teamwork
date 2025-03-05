@@ -4,9 +4,12 @@ void InitMaze();
 int deadend(int, int);
 void mazemake();
 void Wave(int, int, int);
+void FindMin();
+void FindMax();
+void FindStFin();
 void FindRooms();
 //void visual(int**, int, int);
-const int wall = -1, pass = 0, room = -4, start = -2, End = -3;
+const int wall = -1, pass = 0, room = -4, Start = -2, End = -3;
 
 int XX = 17, YY = 15;
 int visibility;
@@ -305,6 +308,40 @@ void FindRooms()
 
 }
 
+int FindMax()
+{
+    int max = maze[0][0];
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            if (maze[i][j] > max)
+            {
+                max = maze[i][j];
+            }
+        }
+    }
+    return max;
+}
+
+void FindStFin()
+{
+    int max = FindMax();
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            if (maze[i][j] == 1)
+            {
+                maze[i][j] = Start;
+            }
+            if (maze[i][j] == max)
+            {
+                maze[i][j] = End;
+            }
+        }
+    }
+}
 void MazeBufInit()
 {
     for (int i = 0; i < height; i++)
@@ -313,7 +350,8 @@ void MazeBufInit()
         {
             switch (maze[i][j]) {
             case wall: mazeBuf[i][j] = char(178); break;
-            case pass: mazeBuf[i][j] = ' '; break;
+            case Start:mazeBuf[i][j] = 'S'; break;
+            case End:mazeBuf[i][j] = 'E'; break;
             default: mazeBuf[i][j] = ' '; break;
             }
         }
@@ -328,6 +366,7 @@ void MakeMap()
     mazemake();
     Wave(xx, yy);
     FindRooms();
+    FindStFin();
     MazeBufInit();
 }
 
