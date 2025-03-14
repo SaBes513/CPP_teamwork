@@ -14,6 +14,7 @@ void FindStFin();
 int FindMin(int, int);
 int FindMax();
 void MazeBufInit();
+void lvlMob(int, int, int, int)
 //void visual(int**, int, int);
 const int wall = -1, pass = 0, room = -4, Start = -2, End = -3;
 
@@ -438,8 +439,18 @@ void MazeBufInit()
 
 }
 
+void lvlMob(int X, int Y, int maxMapLvl, int maxMobLvl)
+{
+    int MobLvl;
+    int mapLvl = maze[x][y];
+    double LvlPercent = mapLvl / maxMapLvl;
+    MobLvl = maxMobLvl * LvlPercent;
+    //функция артема на создание моба
+}
+
 void MakeMap()
 {
+
     srand(time(NULL));
     Init(21, 31, 5, 5, 7);
     InitMaze();
