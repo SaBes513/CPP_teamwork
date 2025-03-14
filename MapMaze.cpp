@@ -1,20 +1,26 @@
 ﻿#include<iostream>
+#include "MapMaze.h"
 using namespace std;
 void InitMaze();
 int deadend(int, int);
 void mazemake();
 void Wave(int, int, int);
-void FindMin();
-void FindMax();
-void FindStFin();
 void FindRooms();
+void Init(int, int, int, int, int);
+void InitMaze();
+void MakeBossMap();
+void FindRooms();
+void FindStFin();
+int FindMin(int, int);
+int FindMax();
+void MazeBufInit();
 //void visual(int**, int, int);
 const int wall = -1, pass = 0, room = -4, Start = -2, End = -3;
 
 int XX = 17, YY = 15;
 int visibility;
 int height, width, rheight, rwidth, k;
-
+int Bheight = 15, Bwidth = 15;
 void Init(int Height, int Width, int Rheight, int Rwidth, int vis)
 {
     height = Height;
@@ -29,6 +35,7 @@ void Init(int Height, int Width, int Rheight, int Rwidth, int vis)
 }
 int** maze = new int* [height];
 char** mazeBuf = new char* [height];
+char** bossMap = new char* [height];
 void InitMaze()
 {
     maze = new int* [height];
@@ -37,6 +44,39 @@ void InitMaze()
     mazeBuf = new char* [height];
     for (int i = 0; i < height; i++)
         mazeBuf[i] = new char[width];
+    bossMap = new char* [height];
+    for (int i = 0; i < height; i++)
+        bossMap[i] = new char[width];
+
+}
+
+void MakeBossMap()
+{
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            bossMap[i][j] = ' ';
+        }
+    }
+    for (int i = 0; i < Bheight; i++)
+    {
+        for (int j = 0; j < Bheight; j++)
+        {
+            bossMap[0][j] = char(178);
+            bossMap[Bheight - 1][j] = char(178);
+            bossMap[i][0] = char(178);
+            bossMap[i][Bwidth - 1] = char(178);
+        }
+    }
+    for (int i = 2; i < Bheight; i += 5)
+    {
+        for (int j = 2; j < Bwidth; j += 5)
+        {
+            if (bossMap[i - 2][j] == char(178) or bossMap[i][j - 2] == char(178) or bossMap[i][j + 2] == char(178) or bossMap[i + 2][j] == char(178))
+                bossMap[i][j] = char(178);
+        }
+    }
 }
 
 void Rendering(int XX, int YY, int visibility)
@@ -67,7 +107,41 @@ void Rendering(int XX, int YY, int visibility)
     }
 }
 
-char** VisToRenderer()
+char** ReturnPartOfMap(int XX, int YY, int visibility)
+{
+    int tempX, tempY, tempVisX, tempVisY;
+    if (XX - visibility < 0)
+        tempX = 0;
+    else
+        tempX = XX - visibility;
+    if (YY - visibility < 0)
+        tempY = 0;
+    else
+        tempY = YY - visibility;
+    if (XX + visibility + 1 >= width)
+        tempVisX = width - 1;
+    else
+        tempVisX = XX + visibility;
+    if (YY + visibility + 1 >= height)
+        tempVisY = height - 1;
+    else
+        tempVisY = YY + visibility;
+    int heightBuf = visibility * 2 + 1;
+    char** mazeBuftoRet = new char* [heightBuf];
+        for (int i = 0; i < heightBuf; i++)
+            mazeBuftoRet[i] = new char[heightBuf];
+    int k=0, m=0;
+    for (int i = tempX; i <= tempVisX; i++, k++)
+    {
+        for (int j = tempY; j <= tempVisY; j++, m++)
+        {
+            mazeBuftoRet[k][m] = mazeBuf[i][j];
+        }
+    }
+    return mazeBuftoRet;
+}
+
+char** VisToRendererMaze()
 {
     for (int i = 0; i < height; i++)
     {
@@ -84,6 +158,10 @@ char** VisToRenderer()
         }
     }
     return mazeBuf;
+}
+char** VisToRendererBoss()
+{
+    return bossMap;
 }
 int deadend(int x, int y) {
     int a = 0;
@@ -338,6 +416,7 @@ void FindStFin()
             if (maze[i][j] == max)
             {
                 maze[i][j] = End;
+                max = -99999;
             }
         }
     }
@@ -356,13 +435,15 @@ void MazeBufInit()
             }
         }
     }
+
 }
 
 void MakeMap()
 {
     srand(time(NULL));
-    Init(41, 71, 5, 5, 7);
+    Init(21, 31, 5, 5, 7);
     InitMaze();
+    MakeBossMap();
     mazemake();
     Wave(xx, yy);
     FindRooms();
@@ -374,7 +455,14 @@ void MakeMap()
 int main() {
 
     MakeMap();
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            cout << bossMap[i][j] << bossMap[i][j];
+        }
 
+        cout << endl;
+    }
+    cout << endl;
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
