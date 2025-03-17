@@ -18,6 +18,12 @@ void lvlMob(int, int, int, int)
 //void visual(int**, int, int);
 const int wall = -1, pass = 0, room = -4, Start = -2, End = -3;
 
+struct COORD
+{
+    short x;
+    short y;
+};
+
 int XX = 17, YY = 15;
 int visibility;
 int height, width, rheight, rwidth, k;
@@ -448,9 +454,73 @@ void lvlMob(int X, int Y, int maxMapLvl, int maxMobLvl)
     //функция артема на создание моба
 }
 
-void MakeMap()
+bool IsPainted(int x, int y)
+{
+    bool ispainted;
+    if (maze[x][y] >= 1)
+        ispainted = false;
+    else
+        ispainted = true;
+    return ispainted;
+}
+
+COORD Finish()
+{
+    COORD end = { 0,0 };
+    for (int i = 0; i < height; i++)
+    {
+        for (int j = 0; j < width; j++)
+        {
+            if (maze[i][j] == End)
+            {
+                end.X = i;
+                end.Y = j;
+            }
+        }
+    }
+    return end;
+}
+
+struct Templ
+{
+    int count;
+    int* pointer;
+};
+struct MAP
+{
+    int size;
+    char* MAP_char;
+    int* MAP_int;
+};
+void GetMap(Templ)
 {
 
+}
+
+Templ GET_MAPS() {
+    Templ ttt_maps;
+    ttt_maps.count = map_count;
+    ttt_maps.pointer = reinterpret_cast<int*>(maps);
+    return ttt_maps;
+}
+
+void DownloadMap()
+{
+    Templ ttt = GET_MAPS();
+    maze = (int*)ttt.pointer;
+    for (int i = 0; i < width * height; i++)
+    {
+        maze[i % width][i / width] = (int*)ttt.pointer[i];
+    }
+    char* rrr = (char*)ttt.pointer + sizeof(int) * (height * width);
+    for (int i = 0; i < width * height; i++)
+    {
+        maze[i % width][i / width] = rrr[i];
+    }
+}
+
+void MakeMap()
+{
     srand(time(NULL));
     Init(21, 31, 5, 5, 7);
     InitMaze();
