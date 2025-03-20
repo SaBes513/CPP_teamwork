@@ -100,28 +100,28 @@ else
 }
     SAVE_FILE.read(reinterpret_cast<char*>(&quests), sizeof(QUEST));
 }
-Templ GET_NPC(NPC* npcs, int npc_count)
+Templ GET_NPC()
 {
     Templ ttt_npc;
     ttt_npc.count = npc_count;
     ttt_npc.pointer = reinterpret_cast<int*>(npcs);
     return ttt_npc;
 }
-Templ GET_MAPS(MAP* maps, int map_count)
+Templ GET_MAPS()
 {
     Templ ttt_maps;
     ttt_maps.count = map_count;
     ttt_maps.pointer = reinterpret_cast<int*>(maps);
     return ttt_maps;
 }
-Templ GET_QUESTS(QUEST* quests, int quest_count)
+Templ GET_QUESTS()
 {
     Templ ttt_quests;
     ttt_quests.count = quest_count;
     ttt_quests.pointer = reinterpret_cast<int*>(quests);
     return ttt_quests;
 }
-Templ GET_CONFIG(CONFIG* config)
+Templ GET_CONFIG()
 {
     Templ ttt_config;
     ttt_config.count = 1;
