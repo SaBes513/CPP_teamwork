@@ -5,24 +5,24 @@
 using namespace std;
 struct NPC
 {
-    char name[30] = "";            //имя
-    int health;                     //текущее здоровье
-    int endurace;                   //текущая выносливость
-    int mana;                       //мана
-    int strenght;                   //сила
-    int intelligence;               //интеллект
-    int dexterity;                  //ловкость
-    int money;                      //деньги
-    int experience;                 //опыт игрока
-    int experienceFromMonster;      //с монстров
-    int levelPlayer;                //уровень игрока
-    int levelNPC;                   //уровень нпс
-    int speed;                      //скорость персонажа
-    int attackSpeed;                //скорость атаки персонажа
-    int vision;                     //поле зрение
-    int aggression;                 //агрессия
-    bool Death;                     //Смерт
-    int Buffs;  	            	//Баффы по дефолту отсутствуют 
+    char name[30] = "";            //ГЁГ¬Гї
+    int health;                     //ГІГҐГЄГіГ№ГҐГҐ Г§Г¤Г®Г°Г®ГўГјГҐ
+    int endurace;                   //ГІГҐГЄГіГ№Г Гї ГўГ»Г­Г®Г±Г«ГЁГўГ®Г±ГІГј
+    int mana;                       //Г¬Г Г­Г 
+    int strenght;                   //Г±ГЁГ«Г 
+    int intelligence;               //ГЁГ­ГІГҐГ«Г«ГҐГЄГІ
+    int dexterity;                  //Г«Г®ГўГЄГ®Г±ГІГј
+    int money;                      //Г¤ГҐГ­ГјГЈГЁ
+    int experience;                 //Г®ГЇГ»ГІ ГЁГЈГ°Г®ГЄГ 
+    int experienceFromMonster;      //Г± Г¬Г®Г­Г±ГІГ°Г®Гў
+    int levelPlayer;                //ГіГ°Г®ГўГҐГ­Гј ГЁГЈГ°Г®ГЄГ 
+    int levelNPC;                   //ГіГ°Г®ГўГҐГ­Гј Г­ГЇГ±
+    int speed;                      //Г±ГЄГ®Г°Г®Г±ГІГј ГЇГҐГ°Г±Г®Г­Г Г¦Г 
+    int attackSpeed;                //Г±ГЄГ®Г°Г®Г±ГІГј Г ГІГ ГЄГЁ ГЇГҐГ°Г±Г®Г­Г Г¦Г 
+    int vision;                     //ГЇГ®Г«ГҐ Г§Г°ГҐГ­ГЁГҐ
+    int aggression;                 //Г ГЈГ°ГҐГ±Г±ГЁГї
+    bool Death;                     //Г‘Г¬ГҐГ°ГІ
+    int Buffs;  	            	//ГЃГ ГґГґГ» ГЇГ® Г¤ГҐГґГ®Г«ГІГі Г®ГІГ±ГіГІГ±ГІГўГіГѕГІ 
     int CountBuffs;
 };
 struct CONFIG
@@ -73,3 +73,7 @@ void Write_Config(CONFIG config);
 void Read_Config(CONFIG& config);
 void Write_Save(int& map_count, NPC* npc, MAP* maps, int npc_count, QUEST quests);
 void Read_Save(ifstream& SAVE_FILE);
+Templ GET_CONFIG(CONFIG* config);
+Templ GET_QUESTS(QUEST* quests, int quest_count);
+Templ GET_MAPS(MAP* maps, int map_count);
+Templ GET_NPC(NPC* npcs, int npc_count);
