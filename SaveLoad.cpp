@@ -67,23 +67,27 @@ void Read_Save(ifstream& SAVE_FILE)
         npcs = new NPC[npc_count];
     SAVE_FILE.read(reinterpret_cast<char*>(npcs), sizeof(NPC) * npc_count);
     SAVE_FILE.read(reinterpret_cast<char*>(&map_count), sizeof(int));
-    //if (maps) {
-    //    for (int i = 0; i < map_count; i++) {
-
-    //        cout << "MAP " << i << " | Size: " << maps[i].size
-    //            << " | MAP_int: " << maps[i].MAP_int
-    //            << " | MAP_char: " << maps[i].MAP_char << endl;
-    //        //if (maps[i].MAP_int) {
-    //        //    delete[] maps[i].MAP_int;
-    //        //    maps[i].MAP_int = nullptr;
-    //        //}
-    //        /*if (maps[i].MAP_int != NULL)
-    //        delete [] maps[i].MAP_int;*/
-    //        //maps[i].MAP_int = nullptr;
-    //        //maps[i].MAP_char = nullptr;
-    //    }
-    //    delete[] maps;
-    //}
+    if (maps) {
+    for (int i = 0; i < map_count; i++)
+    {
+        if (maps[i].MAP_int) {
+            delete[] maps[i].MAP_int;
+            maps[i].MAP_int = nullptr;
+        }
+        if (maps[i].MAP_char) {
+            delete[] maps[i].MAP_char;
+            maps[i].MAP_char = nullptr;
+        }
+    }
+    delete[] maps;
+    maps = nullptr;
+}
+if (map_count <= 0) {
+    cerr << "Ошибка: map_count отрицательный!" << endl;
+    return;
+}
+else
+{
     maps = new MAP[map_count];
     for (int i = 0; i < map_count; i++)
     {
@@ -93,6 +97,7 @@ void Read_Save(ifstream& SAVE_FILE)
         maps[i].MAP_char = new char[maps[i].size];
         SAVE_FILE.read(reinterpret_cast<char*>(maps[i].MAP_char), sizeof(char) * maps[i].size);
     }
+}
     SAVE_FILE.read(reinterpret_cast<char*>(&quests), sizeof(QUEST));
 }
 Templ GET_NPC(NPC* npcs, int npc_count)
@@ -122,57 +127,4 @@ Templ GET_CONFIG(CONFIG* config)
     ttt_config.count = 1;
     ttt_config.pointer = reinterpret_cast<int*>(config);
     return ttt_config;
-}
-int main() {
-    setlocale(LC_ALL, "ru");
-
-    //npc_count = 2;
-    //npcs = new NPC[npc_count];
-    //npcs[0] = { "Warrior", 100, 50, 30, 20, 15, 10, 1000, 200, 50, 1, 1, 5, 3, 8, 2, false, 0, 0 };
-    //npcs[1] = { "Mage", 80, 40, 100, 10, 25, 12, 500, 150, 40, 1, 1, 4, 2, 6, 3, false, 1, 1 };
-    //
-    //map_count = 1;
-    //maps = new MAP[map_count];
-    //maps[0].size = 5;
-    //maps[0].MAP_int = new int[maps[0].size] {1, 2, 3, 4, 5};
-    //maps[0].MAP_char = new char[maps[0].size] {'A', 'B', 'C', 'D', 'E'};
-    //
-    //quest_count = 1;
-    //quests = { 1, false, 0 };
-    //
-    //config = { 50, 50, 10, 10, 20, 1234, 5, 10, 20 };
-    //
-    //cout << "Сохранение данных..." << endl;
-    //Write_Save(map_count, npcs, maps, npc_count, quests);
-    //cout << "Данные сохранены." << endl << endl;
-
-
-    cout << "Чтение сохранения..." << endl;
-    ifstream SAVE_FILE("SAVE_2025-03-20_20-47-11.bin", ios::binary);
-    Read_Save(SAVE_FILE);
-    SAVE_FILE.close();
-    cout << "Данные загружены." << endl << endl;
-    
-    cout << "NPC Count: " << npc_count << endl;
-    for (int i = 0; i < npc_count; i++) {
-        cout << "NPC " << i + 1 << ": " << npcs[i].name << ", HP: " << npcs[i].health << endl;
-    }
-    
-    cout << "Map Count: " << map_count << endl;
-    for (int i = 0; i < map_count; i++) {
-        cout << "Map " << i + 1 << ", Size: " << maps[i].size << ", First Char: " << maps[i].MAP_char[0] << endl;
-    }
-    
-    cout << "Quest ID: " << quests.ID << ", Completed: " << (quests.is_completed ? "Yes" : "No") << "stage:" << quests.step << endl;
-    cout << "Config MapWidth: " << config.MapWidth << ", MapHeight: " << config.MapHeight << endl;
-    
-    delete[] npcs;
-    for (int i = 0; i < map_count; i++) {
-        delete[] maps[i].MAP_int;
-        delete[] maps[i].MAP_char;
-    }
-    delete[] maps;
-    
-    cout << "\nТест завершен!" << endl;
-    return 0;
 }
