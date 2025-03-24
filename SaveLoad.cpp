@@ -73,7 +73,7 @@ int map_count;
 MAP map;
 
 CONFIG config;
-
+config.AUTO_SAVE_INTERVAL = 10; //сразу задаем значение по умолчанию
 
 int quest_count;
 QUEST quests;
@@ -93,9 +93,9 @@ void Write_Config()
     FILE* file = fopen(filename.c_str(), "wb");
     //читается единожды, так как templs писпользовать больше не получится, а точное количество базовых персонажей неизвестно
     fwrite(&config, sizeof(CONFIG), 1, file);
-    fwrite(&base_npc, sizeof(BASE_NPC), 1, file);
-    //fwrite(&base_items, sizeof(BASE_ITEMS), 1, file); //базовых предметов и диалогов пока нема
-    //fwrite(&base_dialogs, sizeof(BASE_DIALOGS), 1, file);
+    fwrite(&base_npc, sizeof(NPC), 1, file);
+    //fwrite(&base_items, sizeof(ITEMS), 1, file); //базовых предметов и диалогов пока нема
+    //fwrite(&base_dialogs, sizeof(DIALOGS), 1, file);
     fclose(file);
 }
 //чтение базы (вызывать сразу после начала игры!!!)
@@ -109,9 +109,9 @@ void Read_Config(const char* filename)
     }
     //читается единожды, так как templs писпользовать больше не получится, а точное количество базовых персонажей неизвестно
     fread(&config, sizeof(CONFIG), 1, CONFIG_FILE);
-    fread(&base_npc, sizeof(BASE_NPC), 1, CONFIG_FILE);
-    //fread(&base_items, sizeof(BASE_ITEMS), 1, CONFIG_FILE);
-    //fread(&base_dialogs, sizeof(BASE_DIALOGS), 1, CONFIG_FILE);
+    fread(&base_npc, sizeof(NPC), 1, CONFIG_FILE);
+    //fread(&base_items, sizeof(ITEMS), 1, CONFIG_FILE);
+    //fread(&base_dialogs, sizeof(DIALOGS), 1, CONFIG_FILE);
     fclose(CONFIG_FILE);
 }
 //чтение сохранения
@@ -146,7 +146,7 @@ void AutoSave()
         }
     }
 }
-//запускаем отдельный поток для автосохранений (я все таки не могу без потоков, но этот реально бро)
+//запускаем отдельный поток для автосохранений (я все таки не могу без потоков, но этот реально хороший бро)
 void StartAutoSave()
 {
     thread autoSaveThread(AutoSave);
