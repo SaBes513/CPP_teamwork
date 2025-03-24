@@ -10,7 +10,6 @@
 #include <chrono>
 using namespace std;
 bool autoSaveEnabled = true; // Флаг для включения/выключения автосохранения
-//закомментированные параметры пока неактивны, тк относятся к другой части кода
 
 NPC* base_npc;
 //ITEMS base_items; //структур диалогов и предметов пока нет :(
