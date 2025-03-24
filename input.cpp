@@ -40,10 +40,8 @@ int READKEY() {
         default:
             break;
         }
-       
-        }
     }
-    swicth(key)
+    switch(key)
     {
         case 13: //ENTER
             return 1;
