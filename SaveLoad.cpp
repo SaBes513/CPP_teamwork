@@ -6,10 +6,66 @@
 #include <ctime>
 #include <conio.h>
 #include <sstream>
+#include <thread>
+#include <chrono>
 using namespace std;
-BASE_NPC base_npc;
-BASE_ITEMS base_items;
-BASE_DIALOGS base_dialogs;
+bool autoSaveEnabled = true; // Флаг для включения/выключения автосохранения
+//закомментированные параметры пока неактивны, тк относятся к другой части кода
+struct NPC
+{
+    //mob MOB;			//что за моб(гоблин,скелет и тд
+    //mobClass MOBCLASS;		//тип моба(игрок, житель или враг)
+    char* name = new char[30];      //имя
+    int health;                     //текущее здоровье
+    int endurace;                   //текущая выносливость
+    int mana;                       //мана
+    int strenght;                   //сила
+    int intelligence;               //интеллект
+    int dexterity;                  //ловкость
+    int money;                      //деньги
+    int experience;                 //опыт игрока
+    int experienceFromMonster;      //с монстров
+    int levelPlayer;                //уровень игрока
+    int levelNPC;                   //уровень нпс
+    int speed;                      //скорость персонажа
+    int attackSpeed;                //скорость атаки персонажа
+    int vision;                     //поле зрение
+    int aggression;                 //агрессия
+    //COORD coordinations;            //координаты
+    bool Death;                     //Смерт
+    int* Buffs;			//Баффы по дефолту отсутствуют 
+    int CountBuffs;
+
+};
+struct CONFIG
+{
+    int MapHeight;
+    int MapWidth;
+    int RoomHeight;
+    int RoomWidth;
+    int Wisibility;
+    int Seed;
+    int RoomsNumber;
+    int MenuHeight;
+    int Menuwidth;
+    int AUTO_SAVE_INTERVAL; // Интервал автосохранения в секундах
+};
+struct QUEST
+{
+    int ID;
+    bool is_completed;
+    int step;
+};
+//templ больше не используется
+struct MAP
+{
+    int size;
+    int* MAP_int;
+    char* MAP_char;
+};
+NPC* base_npc;
+//ITEMS base_items; //структур диалогов и предметов пока нет :(
+//DIALOGS base_dialogs;
 int npc_count;
 NPC* npcs;
 
@@ -17,6 +73,7 @@ int map_count;
 MAP map;
 
 CONFIG config;
+
 
 int quest_count;
 QUEST quests;
@@ -28,42 +85,83 @@ string Get_Current_Date_Time()
     strftime(buffer, sizeof(buffer), "%Y-%m-%d_%H-%M-%S", ltm);
     return string(buffer);
 }
-
+//запись базы (вызывать при каждом изменении настроек)
 void Write_Config()
 {
-    Templ temples[3];
-    temples[0] = GET_MAPMAZE_TEMPL();
-    string filename = "SAVE_CONFIG_" + Get_Current_Date_Time() + ".bin";
+    string type = ".bin";
+    string filename = "SAVE_CONFIG" + type;
     FILE* file = fopen(filename.c_str(), "wb");
+    //читается единожды, так как templs писпользовать больше не получится, а точное количество базовых персонажей неизвестно
     fwrite(&config, sizeof(CONFIG), 1, file);
+    fwrite(&base_npc, sizeof(BASE_NPC), 1, file);
+    //fwrite(&base_items, sizeof(BASE_ITEMS), 1, file); //базовых предметов и диалогов пока нема
+    //fwrite(&base_dialogs, sizeof(BASE_DIALOGS), 1, file);
     fclose(file);
 }
-void Read_Config(ifstream CONFIG_FILE)
+//чтение базы (вызывать сразу после начала игры!!!)
+void Read_Config(const char* filename)
 {
-    Templ temples[3];
-    temples[0] = GET_MAPMAZE_TEMPL();
+    FILE* CONFIG_FILE;
+    CONFIG_FILE = fopen(filename, "rb");
     if (!CONFIG_FILE) {
         cerr << "Ошибка: файл конфигурации не найден!" << endl;
         return;
     }
-    fread(&config, sizeof(CONFIG), 1, file);
-    fread(&base_npc, sizeof(BASE_NPC), 1, temples[0].sizee);
-    fread(&base_items, sizeof(BASE_ITEMS), 1, temples[1].size);
-    fread(&base_dialogs, sizeof(BASE_DIALOGS), 1, temples[2].size);
-    fclose(file);
+    //читается единожды, так как templs писпользовать больше не получится, а точное количество базовых персонажей неизвестно
+    fread(&config, sizeof(CONFIG), 1, CONFIG_FILE);
+    fread(&base_npc, sizeof(BASE_NPC), 1, CONFIG_FILE);
+    //fread(&base_items, sizeof(BASE_ITEMS), 1, CONFIG_FILE);
+    //fread(&base_dialogs, sizeof(BASE_DIALOGS), 1, CONFIG_FILE);
+    fclose(CONFIG_FILE);
 }
-void Write_Save(NPC* npc, MAP maps, int npc_count, QUEST quests)
+//чтение сохранения
+void Write_Save(NPC* npc, MAP maps, int npc_count, QUEST quests, bool is_auto)
 {
-    string filename = "SAVE_" + Get_Current_Date_Time() + ".bin";
+    string filename;
+    if (is_auto == true)
+        filename = "AUTO_SAVE.bin";
+    else
+        filename = "SAVE_" + Get_Current_Date_Time() + ".bin";
     FILE* file = fopen(filename.c_str(), "wb");
     fwrite(&npc_count, sizeof(int), 1, file);
     fwrite(npc, sizeof(NPC), npc_count, file);
+  
     fwrite(&maps.size, sizeof(int), 1, file);
     fwrite(maps.MAP_int, sizeof(int), maps.size, file);
     fwrite(maps.MAP_char, sizeof(char), maps.size, file);
+  
     fwrite(&quests, sizeof(QUEST), 1, file);
     fclose(file);
+    cout << "[AutoSave] Game saved to " << filename << endl;
 }
+//автосохранения
+void AutoSave()
+{
+    while (autoSaveEnabled)
+    {
+        this_thread::sleep_for(chrono::seconds(config.AUTO_SAVE_INTERVAL)); //ждем заданный интервал секунд
+        if (autoSaveEnabled)
+        {
+            Write_Save(npcs, map, npc_count, quests, true);
+        }
+    }
+}
+//запускаем отдельный поток для автосохранений (я все таки не могу без потоков, но этот реально бро)
+void StartAutoSave()
+{
+    thread autoSaveThread(AutoSave);
+    autoSaveThread.detach(); // Запускаем поток в фоне
+}
+//закрываем поток автосохранений
+void StopAutoSave()
+{
+    autoSaveEnabled = false;  // Завершаем цикл в потоке
+    if (autoSaveThread.joinable())
+    {
+        autoSaveThread.join();  // Ждем завершения потока
+    }
+}
+//чтение сохранения
 void Read_Save(const char* filename)
 {
     FILE* savefile = fopen(filename, "rb");
@@ -72,43 +170,35 @@ void Read_Save(const char* filename)
         return;
     }
     fread(&npc_count, sizeof(int), 1, savefile);
-    delete[] npcs;
+    if (npcs)
+        delete[] npcs;
     npcs = (npc_count > 0) ? new NPC[npc_count] : nullptr;
     fread(npcs, sizeof(NPC), npc_count, savefile);
-    //delete[] maps;
     fread(&map.size, sizeof(int), 1, savefile);
+    if(MAP_int)
+       delete[] MAP_int;
     map.MAP_int = new int[map.size];
     fread(map.MAP_int, sizeof(int), map.size, savefile);
+  if(MAP_char)
+       delete[] MAP_char;
     map.MAP_char = new char[map.size];
     fread(map.MAP_char, sizeof(char), map.size, savefile);
     fread(&quests, sizeof(QUEST), 1, savefile);
     fclose(savefile);
 }
-Templ GET_NPC()
+NPC GET_NPC()
 {
-    Templ ttt_npc;
-    ttt_npc.count = npc_count;
-    ttt_npc.pointer = reinterpret_cast<int*>(npcs);
-    return ttt_npc;
+    return npc;
 }
-Templ GET_MAPS()
+MAP GET_MAPS()
 {
-    Templ ttt_maps;
-    ttt_maps.count = map_count;
-    ttt_maps.pointer = reinterpret_cast<int*>(&map);
-    return ttt_maps;
+    return map;
 }
-Templ GET_QUESTS()
+QUEST GET_QUESTS()
 {
-    Templ ttt_quests;
-    ttt_quests.count = quest_count;
-    ttt_quests.pointer = reinterpret_cast<int*>(&quests);
-    return ttt_quests;
+    return quests;
 }
-Templ GET_CONFIG()
+CONFIG GET_CONFIG()
 {
-    Templ ttt_config;
-    ttt_config.count = 1;
-    ttt_config.pointer = reinterpret_cast<int*>(&config);
-    return ttt_config;
+    return config;
 }
