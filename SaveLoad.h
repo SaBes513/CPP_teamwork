@@ -3,27 +3,32 @@
 #include <fstream>
 #include <string>
 using namespace std;
+//закомментированные параметры пока неактивны, тк относятся к другой части кода
 struct NPC
 {
-    char name[30] = "";            //èìÿ
-    int health;                     //òåêóùåå çäîðîâüå
-    int endurace;                   //òåêóùàÿ âûíîñëèâîñòü
-    int mana;                       //ìàíà
-    int strength;                   //ñèëà
-    int intelligence;               //èíòåëëåêò
-    int dexterity;                  //ëîâêîñòü
-    int money;                      //äåíüãè
-    int experience;                 //îïûò èãðîêà
-    int experienceFromMonster;      //ñ ìîíñòðîâ
-    int levelPlayer;                //óðîâåíü èãðîêà
-    int levelNPC;                   //óðîâåíü íïñ
-    int speed;                      //ñêîðîñòü ïåðñîíàæà
-    int attackSpeed;                //ñêîðîñòü àòàêè ïåðñîíàæà
-    int vision;                     //ïîëå çðåíèå
-    int aggression;                 //àãðåññèÿ
-    bool Death;                     //Ñìåðò
-    int Buffs;  	            	//Áàôôû ïî äåôîëòó îòñóòñòâóþò 
+    //mob MOB;			//что за моб(гоблин,скелет и тд
+    //mobClass MOBCLASS;		//тип моба(игрок, житель или враг)
+    char* name = new char[30];      //имя
+    int health;                     //текущее здоровье
+    int endurace;                   //текущая выносливость
+    int mana;                       //мана
+    int strenght;                   //сила
+    int intelligence;               //интеллект
+    int dexterity;                  //ловкость
+    int money;                      //деньги
+    int experience;                 //опыт игрока
+    int experienceFromMonster;      //с монстров
+    int levelPlayer;                //уровень игрока
+    int levelNPC;                   //уровень нпс
+    int speed;                      //скорость персонажа
+    int attackSpeed;                //скорость атаки персонажа
+    int vision;                     //поле зрение
+    int aggression;                 //агрессия
+    //COORD coordinations;            //координаты
+    bool Death;                     //Смерт
+    int* Buffs;			//Баффы по дефолту отсутствуют 
     int CountBuffs;
+
 };
 struct CONFIG
 {
@@ -36,6 +41,7 @@ struct CONFIG
     int RoomsNumber;
     int MenuHeight;
     int Menuwidth;
+    int AUTO_SAVE_INTERVAL; // Интервал автосохранения в секундах
 };
 struct QUEST
 {
@@ -43,30 +49,7 @@ struct QUEST
     bool is_completed;
     int step;
 };
-struct Templ
-{
-    int count;
-    int* pointer;
-};
-struct INVENTORY
-{
-
-};
-struct BASE_NPC
-{
-    int health;
-    int stregth;
-};
-struct BASE_ITEMS
-{
-    int health;
-    int stregth;
-};
-struct BASE_DIALOGS
-{
-    int health;
-    int stregth;
-};
+//templ больше не используется
 struct MAP
 {
     int size;
@@ -74,9 +57,12 @@ struct MAP
     char* MAP_char;
 };
 std::string Get_Current_Date_Time();
-void Write_Config(CONFIG config);
-void Read_Config(CONFIG& config);
-void Write_Save(NPC* npc, MAP* maps, int npc_count, QUEST quests);
+void Write_Config();
+void Read_Config(const char* filename);
+void Write_Save(NPC* npc, MAP maps, int npc_count, QUEST quests, bool is_auto);
+void AutoSave();
+void StartAutoSave();
+void StopAutoSave();
 void Read_Save(const char* filename);
 Templ GET_CONFIG();
 Templ GET_QUESTS();
