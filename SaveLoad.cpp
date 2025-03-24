@@ -1,4 +1,4 @@
-﻿#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -7,7 +7,89 @@
 #include <conio.h>
 #include <sstream>
 using namespace std;
+struct NPC
+{
+    char name[30] = "";            //èìÿ
+    int health;                     //òåêóùåå çäîðîâüå
+    int endurace;                   //òåêóùàÿ âûíîñëèâîñòü
+    int mana;                       //ìàíà
+    int strength;                   //ñèëà
+    int intelligence;               //èíòåëëåêò
+    int dexterity;                  //ëîâêîñòü
+    int money;                      //äåíüãè
+    int experience;                 //îïûò èãðîêà
+    int experienceFromMonster;      //ñ ìîíñòðîâ
+    int levelPlayer;                //óðîâåíü èãðîêà
+    int levelNPC;                   //óðîâåíü íïñ
+    int speed;                      //ñêîðîñòü ïåðñîíàæà
+    int attackSpeed;                //ñêîðîñòü àòàêè ïåðñîíàæà
+    int vision;                     //ïîëå çðåíèå
+    int aggression;                 //àãðåññèÿ
+    bool Death;                     //Ñìåðò
+    int Buffs;  	            	//Áàôôû ïî äåôîëòó îòñóòñòâóþò 
+    int CountBuffs;
+};
+struct CONFIG
+{
+    int MapHeight;
+    int MapWidth;
+    int RoomHeight;
+    int RoomWidth;
+    int Wisibility;
+    int Seed;
+    int RoomsNumber;
+    int MenuHeight;
+    int Menuwidth;
+};
+struct QUEST
+{
+    int ID;
+    bool is_completed;
+    int step;
+};
+struct Templ
+{
+    int count;
+    int* pointer;
+};
+struct INVENTORY
+{
 
+};
+struct BASE_NPC
+{
+    int health;
+    int stregth;
+};
+struct BASE_ITEMS
+{
+    int health;
+    int stregth;
+};
+struct BASE_DIALOGS
+{
+    int health;
+    int stregth;
+};
+struct MAP
+{
+    int size;
+    int* MAP_int;
+    char* MAP_char;
+};
+BASE_NPC base_npc;
+BASE_ITEMS base_items;
+BASE_DIALOGS base_dialogs;
+int npc_count;
+NPC* npcs;
+
+int map_count;
+MAP map;
+
+CONFIG config;
+
+int quest_count;
+QUEST quests;
 string Get_Current_Date_Time()
 {
     time_t now = time(0);
@@ -16,89 +98,61 @@ string Get_Current_Date_Time()
     strftime(buffer, sizeof(buffer), "%Y-%m-%d_%H-%M-%S", ltm);
     return string(buffer);
 }
-void Write_Config(CONFIG config)
+
+void Write_Config()
 {
-    string type = ".bin";
-    string filename = "SAVE_CONFIG_" + type;
-    const char* FILE_NAME = filename.c_str();
-    ofstream SAVE_FILE(FILE_NAME, ios::binary);
-    SAVE_FILE.write(reinterpret_cast<const char*>(&config), sizeof(CONFIG));
-    SAVE_FILE.close();
+    Templ temples[3];
+    temples[0] = GET_MAPMAZE_TEMPL();
+    string filename = "SAVE_CONFIG_" + Get_Current_Date_Time() + ".bin";
+    FILE* file = fopen(filename.c_str(), "wb");
+    fwrite(&config, sizeof(CONFIG), 1, file);
+    fclose(file);
 }
-void Read_Config(CONFIG& config)
+void Read_Config(ifstream CONFIG_FILE)
 {
-    ifstream CONFIG_FILE("SAVE_CONFIG.bin", ios::binary);
+    Templ temples[3];
+    temples[0] = GET_MAPMAZE_TEMPL();
     if (!CONFIG_FILE) {
         cerr << "Ошибка: файл конфигурации не найден!" << endl;
         return;
     }
-    CONFIG_FILE.read(reinterpret_cast<char*>(&config), sizeof(CONFIG));
-    CONFIG_FILE.close();
+    fread(&config, sizeof(CONFIG), 1, file);
+    fread(&base_npc, sizeof(BASE_NPC), 1, temples[0].sizee);
+    fread(&base_items, sizeof(BASE_ITEMS), 1, temples[1].size);
+    fread(&base_dialogs, sizeof(BASE_DIALOGS), 1, temples[2].size);
+    fclose(file);
 }
-void Write_Save(int& map_count, NPC* npc, MAP* maps, int npc_count, QUEST quests)
+void Write_Save(NPC* npc, MAP maps, int npc_count, QUEST quests)
 {
     string filename = "SAVE_" + Get_Current_Date_Time() + ".bin";
-    const char* FILE_NAME = filename.c_str();
-    ofstream SAVE_FILE(filename, ios::binary);
-    SAVE_FILE.write(reinterpret_cast<const char*>(&npc_count), sizeof(int));
-    SAVE_FILE.write(reinterpret_cast<const char*>(npc), sizeof(NPC) * npc_count);
-    SAVE_FILE.write(reinterpret_cast<const char*>(&map_count), sizeof(int));
-    for (int i = 0; i < map_count; i++) {
-        SAVE_FILE.write(reinterpret_cast<const char*>(&maps[i].size), sizeof(maps[i].size));
-        SAVE_FILE.write(reinterpret_cast<const char*>(maps[i].MAP_int), sizeof(int) * maps[i].size);
-        SAVE_FILE.write(reinterpret_cast<const char*>(maps[i].MAP_char), sizeof(char) * maps[i].size);
-    }
-    SAVE_FILE.write(reinterpret_cast<const char*>(&quests), sizeof(QUEST));
-    SAVE_FILE.close();
+    FILE* file = fopen(filename.c_str(), "wb");
+    fwrite(&npc_count, sizeof(int), 1, file);
+    fwrite(npc, sizeof(NPC), npc_count, file);
+    fwrite(&maps.size, sizeof(int), 1, file);
+    fwrite(maps.MAP_int, sizeof(int), maps.size, file);
+    fwrite(maps.MAP_char, sizeof(char), maps.size, file);
+    fwrite(&quests, sizeof(QUEST), 1, file);
+    fclose(file);
 }
-void Read_Save(ifstream& SAVE_FILE)
+void Read_Save(const char* filename)
 {
-    if (!SAVE_FILE) {
+    FILE* savefile = fopen(filename, "rb");
+    if (!savefile) {
         cerr << "Ошибка: файл сохранения не найден!" << endl;
         return;
     }
-    SAVE_FILE.read(reinterpret_cast<char*>(&npc_count), sizeof(int));
-    if (npcs) {
-
-        delete[] npcs;
-        npcs = nullptr;
-    }
-    if (npc_count > 0)
-        npcs = new NPC[npc_count];
-    SAVE_FILE.read(reinterpret_cast<char*>(npcs), sizeof(NPC) * npc_count);
-    SAVE_FILE.read(reinterpret_cast<char*>(&map_count), sizeof(int));
-    if (maps) {
-    for (int i = 0; i < map_count; i++)
-    {
-        if (maps[i].MAP_int) {
-            delete[] maps[i].MAP_int;
-            maps[i].MAP_int = nullptr;
-        }
-        if (maps[i].MAP_char) {
-            delete[] maps[i].MAP_char;
-            maps[i].MAP_char = nullptr;
-        }
-    }
-    delete[] maps;
-    maps = nullptr;
-}
-if (map_count <= 0) {
-    cerr << "Ошибка: map_count отрицательный!" << endl;
-    return;
-}
-else
-{
-    maps = new MAP[map_count];
-    for (int i = 0; i < map_count; i++)
-    {
-        SAVE_FILE.read(reinterpret_cast<char*>(&maps[i].size), sizeof(maps[i].size));
-        maps[i].MAP_int = new int[maps[i].size];
-        SAVE_FILE.read(reinterpret_cast<char*>(maps[i].MAP_int), sizeof(int) * maps[i].size);
-        maps[i].MAP_char = new char[maps[i].size];
-        SAVE_FILE.read(reinterpret_cast<char*>(maps[i].MAP_char), sizeof(char) * maps[i].size);
-    }
-}
-    SAVE_FILE.read(reinterpret_cast<char*>(&quests), sizeof(QUEST));
+    fread(&npc_count, sizeof(int), 1, savefile);
+    delete[] npcs;
+    npcs = (npc_count > 0) ? new NPC[npc_count] : nullptr;
+    fread(npcs, sizeof(NPC), npc_count, savefile);
+    //delete[] maps;
+    fread(&map.size, sizeof(int), 1, savefile);
+    map.MAP_int = new int[map.size];
+    fread(map.MAP_int, sizeof(int), map.size, savefile);
+    map.MAP_char = new char[map.size];
+    fread(map.MAP_char, sizeof(char), map.size, savefile);
+    fread(&quests, sizeof(QUEST), 1, savefile);
+    fclose(savefile);
 }
 Templ GET_NPC()
 {
@@ -111,20 +165,20 @@ Templ GET_MAPS()
 {
     Templ ttt_maps;
     ttt_maps.count = map_count;
-    ttt_maps.pointer = reinterpret_cast<int*>(maps);
+    ttt_maps.pointer = reinterpret_cast<int*>(&map);
     return ttt_maps;
 }
 Templ GET_QUESTS()
 {
     Templ ttt_quests;
     ttt_quests.count = quest_count;
-    ttt_quests.pointer = reinterpret_cast<int*>(quests);
+    ttt_quests.pointer = reinterpret_cast<int*>(&quests);
     return ttt_quests;
 }
 Templ GET_CONFIG()
 {
     Templ ttt_config;
     ttt_config.count = 1;
-    ttt_config.pointer = reinterpret_cast<int*>(config);
+    ttt_config.pointer = reinterpret_cast<int*>(&config);
     return ttt_config;
 }
