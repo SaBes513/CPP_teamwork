@@ -9,7 +9,7 @@ struct NPC
     int health;                     //òåêóùåå çäîðîâüå
     int endurace;                   //òåêóùàÿ âûíîñëèâîñòü
     int mana;                       //ìàíà
-    int strenght;                   //ñèëà
+    int strength;                   //ñèëà
     int intelligence;               //èíòåëëåêò
     int dexterity;                  //ëîâêîñòü
     int money;                      //äåíüãè
@@ -43,12 +43,6 @@ struct QUEST
     bool is_completed;
     int step;
 };
-struct MAP
-{
-    int size;
-    char* MAP_char;
-    int* MAP_int;
-};
 struct Templ
 {
     int count;
@@ -58,21 +52,32 @@ struct INVENTORY
 {
 
 };
-int npc_count;
-NPC* npcs;
-
-int map_count;
-MAP* maps;
-
-CONFIG config;
-
-int quest_count;
-QUEST quests;
+struct BASE_NPC
+{
+    int health;
+    int stregth;
+};
+struct BASE_ITEMS
+{
+    int health;
+    int stregth;
+};
+struct BASE_DIALOGS
+{
+    int health;
+    int stregth;
+};
+struct MAP
+{
+    int size;
+    int* MAP_int;
+    char* MAP_char;
+};
 std::string Get_Current_Date_Time();
 void Write_Config(CONFIG config);
 void Read_Config(CONFIG& config);
-void Write_Save(int& map_count, NPC* npc, MAP* maps, int npc_count, QUEST quests);
-void Read_Save(ifstream& SAVE_FILE);
+void Write_Save(NPC* npc, MAP* maps, int npc_count, QUEST quests);
+void Read_Save(const char* filename);
 Templ GET_CONFIG();
 Templ GET_QUESTS();
 Templ GET_MAPS();
