@@ -39,7 +39,7 @@ void Write_Config()
     string type = ".bin";
     string filename = "SAVE_CONFIG" + type;
     FILE* file = fopen(filename.c_str(), "wb");
-    //читается единожды, так как templs писпользовать больше не получится, а точное количество базовых персонажей неизвестно
+    //читается единожды, так как templ использовать больше не получится, а точное количество базовых персонажей неизвестно
     fwrite(&config, sizeof(CONFIG), 1, file);
     fwrite(&base_npc, sizeof(NPC), 1, file);
     //fwrite(&base_items, sizeof(ITEMS), 1, file); //базовых предметов и диалогов пока нема
@@ -55,7 +55,7 @@ void Read_Config(const char* filename)
         cerr << "Ошибка: файл конфигурации не найден!" << endl;
         return;
     }
-    //читается единожды, так как templs писпользовать больше не получится, а точное количество базовых персонажей неизвестно
+    //читается единожды, так как templ использовать больше не получится, а точное количество базовых персонажей неизвестно
     fread(&config, sizeof(CONFIG), 1, CONFIG_FILE);
     fread(&base_npc, sizeof(NPC), 1, CONFIG_FILE);
     //fread(&base_items, sizeof(ITEMS), 1, CONFIG_FILE);
@@ -63,7 +63,7 @@ void Read_Config(const char* filename)
     fclose(CONFIG_FILE);
 }
 //чтение сохранения
-void Write_Save(NPC* npc, MAP maps, int npc_count, QUEST quests, bool is_auto)
+void Write_Save(NPC* npc, MAP maps, int npc_count, QUEST quests, bool is_auto) //is_auto нужен для обозначения автосохранений, ибо у них будут разные имена
 {
     string filename;
     if (is_auto == true)
@@ -71,13 +71,14 @@ void Write_Save(NPC* npc, MAP maps, int npc_count, QUEST quests, bool is_auto)
     else
         filename = "SAVE_" + Get_Current_Date_Time() + ".bin";
     FILE* file = fopen(filename.c_str(), "wb");
+    //запись нпс
     fwrite(&npc_count, sizeof(int), 1, file);
     fwrite(npc, sizeof(NPC), npc_count, file);
-  
+    //запись карт
     fwrite(&maps.size, sizeof(int), 1, file);
     fwrite(maps.MAP_int, sizeof(int), maps.size, file);
     fwrite(maps.MAP_char, sizeof(char), maps.size, file);
-  
+    //запись квестов, диалогов и инвентаря пока нет  
     fwrite(&quests, sizeof(QUEST), 1, file);
     fclose(file);
     cout << "[AutoSave] Game saved to " << filename << endl;
@@ -123,12 +124,12 @@ void Read_Save(const char* filename)
     npcs = (npc_count > 0) ? new NPC[npc_count] : nullptr;
     fread(npcs, sizeof(NPC), npc_count, savefile);
     fread(&map.size, sizeof(int), 1, savefile);
-    if(MAP_int)
-       delete[] MAP_int;
+    if (MAP_int) //если в карте уже что то было, удаляем
+        delete[] MAP_int;
     map.MAP_int = new int[map.size];
     fread(map.MAP_int, sizeof(int), map.size, savefile);
-  if(MAP_char)
-       delete[] MAP_char;
+    if (MAP_char) //если в карте уже что то было, удаляем
+        delete[] MAP_char;
     map.MAP_char = new char[map.size];
     fread(map.MAP_char, sizeof(char), map.size, savefile);
     fread(&quests, sizeof(QUEST), 1, savefile);
