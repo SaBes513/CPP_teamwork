@@ -17,7 +17,6 @@ bool** VisToRendererMaze();
 bool IsWall(int, int);
 bool IsPainted(int, int);
 void MakeMap();
-void Visual();
 void DownloadMap_MAP();
 int lvlMob(int, int , int , int );
 COORD FindFinish();
