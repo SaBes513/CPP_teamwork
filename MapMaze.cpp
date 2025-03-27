@@ -3,8 +3,10 @@
 #include "MapMaze.h"
 #include "Config.h"
 using namespace std;
-int deadend(int, int); 
 void mazemake(); 
+int deadend(int, int); 
+void Init(int, int, int, int, int);
+void InitMaze();
 void Wave(int, int, int); 
 void FindRooms();
 void MakeBossMap();
@@ -247,16 +249,16 @@ int xx, yy;
 //Создание лабиринта с комнатами
 void mazemake()  
 {
-    //х - координата х, y - координата y
+    //х - координата х, y - координата y, orient - направление, a - счетчик для цикла while
     int x, y, orient, a;
-    bool b, swap = 1;
     // Массив карты заполняется стенами
     for (int i = 0; i < height; i++)
         for (int j = 0; j < width; j++)
             maze[i][j] = wall;
     x = 3; y = 3; a = 0;
     while (a < 10000) {
-        maze[y][x] = pass; a++;
+        maze[y][x] = pass; 
+        a++;
         //Бесконечный цикл, который прерывается только тупиком
         while (1) {
             //Рандомное определение направления
@@ -304,10 +306,13 @@ void mazemake()
     }
     rheight--; rwidth--;
 
-    for (int l = 0; l < k; l++) {
-        b = 1;
-        while (b) {
+    bool toContinue;
+    //Цикл, совершающий столько итераций, сколько всего комнат
+    for (int i = 0; i < k; i++) {
+        toContinue = 1;
+        while (toContinue) {
             do {
+                //Определяем координаты комнаты
                 if (rwidth % 4 == 0)
                     x = 2 * (rand() % (width / 2)) + 1;
                 else
@@ -316,42 +321,32 @@ void mazemake()
                     y = 2 * (rand() % (height / 2)) + 1;
                 else
                     y = 2 * (rand() % (height / 2)) + 2;
-            } while (x < (rwidth + 2) || x >(width - rwidth - 2) ||
-                y < (rheight + 2) || y >(height - rheight - 2));
+            } while (x < (rwidth + 2) || x >(width - rwidth - 2) || y < (rheight + 2) || y >(height - rheight - 2));
 
-            b = 0;
+            toContinue = 0;
+            //Если вокруг этих координат есть комната, продолжаем цикл do - while 
             for (int i = (y - rheight - 2); i < (y + rheight + 2); i++)
                 for (int j = (x - rwidth - 2); j < (x + rwidth + 2); j++)
                     if (maze[i][j] == room)
-                        b = 1;
-
-            if (b)
+                        toContinue = 1;
+            if (toContinue)
                 continue;
-
+            //Если вокруг этих координат комнат нет, создаем там комнату
             for (int i = (y - rheight / 2); i < (y + rheight / 2 + 1); i++)
                 for (int j = (x - rwidth / 2); j < (x + rwidth / 2 + 1); j++)
                     maze[i][j] = room;
-
-            orient = rand() % 4;
-
-            if (orient == 0) maze[y + rheight / 2 + 1][x - rwidth / 2 + 2 * (rand() % (rwidth / 2 + 1))] = room;
-            if (orient == 1) maze[y - rheight / 2 - 1][x - rwidth / 2 + 2 * (rand() % (rwidth / 2 + 1))] = room;
-            if (orient == 2) maze[y - rheight / 2 + 2 * (rand() % (rheight / 2 + 1))][x + rwidth / 2 + 1] = room;
-            if (orient == 3) maze[y - rheight / 2 + 2 * (rand() % (rheight / 2 + 1))][x - rwidth / 2 - 1] = room;
-
-            if (swap) {
-                rheight += rwidth;
-                rwidth = rheight - rwidth;
-                rheight -= rwidth;
-            }
         }
     }
-
-    xx = ((rand() % height) & 65534) + 1, yy = ((rand() % width) & 65534) + 1;
-    while (maze[xx][yy] == room)
+    
+    //Рандомно определяем точку спавна, что будет необходимо для запуска волнового алгоритма. Находим точку спавна, которая будет не в комнате
+    bool toStop = false;
+    while(1)
     {
         xx = ((rand() % height) & 65534) + 1, yy = ((rand() % width) & 65534) + 1;
-    }
+        maze[xx][yy] == room ? toStop = false : toStop = true;
+        if (toStop)
+            break;
+    } 
 }
 //Запуск волнового алгоритма для определения удаленности точки на карте от спавна
 void Wave(int x, int y, int n = 1) 
@@ -452,6 +447,7 @@ int FindMax()
 void FindFin() 
 {
     int max = FindMax();
+    bool toBreak = false;
     //Находим финиш, обозначаем его концом и заканчиваем цикл
     for (int i = 0; i < height; i++)
     {
@@ -460,9 +456,12 @@ void FindFin()
             if (maze[i][j] == max)
             {
                 maze[i][j] = End;
+                toBreak = true;
                 break;
             }
         }
+        if (toBreak)
+            break;
     }
 }
 //Передача уровня моба в зависимости от уровня точки на карте
@@ -548,11 +547,13 @@ MAP GET_MAPMAZE_MAP() {
     //Выделяем память под сохранение карты
     MAP_maps.MAP_int = new int[ttt_size];
     MAP_maps.MAP_char = new char[ttt_size];
+    //Переменная, необходимая для следующего цикла. Равна либо ширине, либо высоте
+    int WidthOrHeight = height > width ? width : height;
     //Сохраняем каждый элемент карты
     for (int i = 0; i < ttt_size; i++)
     {
-        MAP_maps.MAP_int[i] = maze[i % width][i / width];
-        MAP_maps.MAP_char[i] = mazeBuf[i % width][i / width];
+        MAP_maps.MAP_int[i] = maze[i % WidthOrHeight][i / WidthOrHeight];
+        MAP_maps.MAP_char[i] = mazeBuf[i % WidthOrHeight][i / WidthOrHeight];
     }
     return MAP_maps;
 }
@@ -561,12 +562,21 @@ void DownloadMap_MAP()
 {
     //Создаем переменную типа MAP и получаем значение от функциии GET_MAPMAZES
     MAP ttt_maps = GET_MAPMAZES();
+    //Переменная, необходимая для следующего цикла. Равна либо ширине, либо высоте
+    int WidthOrHeight = height > width ? width : height;
     //Заполняем каждый элемент карты
     for (int i = 0; i < width * height; i++)
     {
-        maze[i % width][i / width] = ttt_maps.MAP_int[i];
-        mazeBuf[i % width][i / width] = ttt_maps.MAP_char[i];
+        maze[i % WidthOrHeight][i / WidthOrHeight] = ttt_maps.MAP_int[i];
+        mazeBuf[i % WidthOrHeight][i / WidthOrHeight] = ttt_maps.MAP_char[i];
     }
+}
+//Инициализация карты
+void MapInit(int Height, int Width, int Rheight, int Rwidth, int vis)
+{
+    Init( Height,  Width,  Rheight,  Rwidth,  vis);
+    InitMaze();
+
 }
 //Создание карты, где вызываются все необходимые для создания карты функции
 void MakeMap() 
