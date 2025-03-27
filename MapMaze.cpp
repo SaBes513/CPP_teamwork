@@ -1,48 +1,47 @@
-﻿#include<iostream>
+﻿#include <iostream>
+#include <Windows.h>
 #include "MapMaze.h"
+#include "Config.h"
 using namespace std;
-void InitMaze();
-int deadend(int, int);
-void mazemake();
-void Wave(int, int, int);
+int deadend(int, int); 
+void mazemake(); 
+void Wave(int, int, int); 
 void FindRooms();
-void Init(int, int, int, int, int);
-void InitMaze();
 void MakeBossMap();
 void FindRooms();
-void FindStFin();
-int FindMin(int, int);
+void FindFin();
+int FindMinInRoom(int, int);
 int FindMax();
-void MazeBufInit();
-void lvlMob(int, int, int, int)
-//void visual(int**, int, int);
+//void lvlMob(int, int, int, int);
+
 const int wall = -1, pass = 0, room = -4, Start = -2, End = -3;
 
-struct COORD
-{
-    short x;
-    short y;
-};
-
 int XX = 17, YY = 15;
+//Дальность видимости
 int visibility;
+//height - Высота карты, width - ширина карты, rheight - высока комнаты, rwidth - ширина комнаты, k - количество комнат
 int height, width, rheight, rwidth, k;
+//Bheight - Высота карты босса, Bwidth - ширина карты босса
 int Bheight = 15, Bwidth = 15;
-void Init(int Height, int Width, int Rheight, int Rwidth, int vis)
+
+//Инициализация карты
+void Init(int Height, int Width, int Rheight, int Rwidth, int vis) 
 {
     height = Height;
     width = Width;
     rheight = Rheight;
     rwidth = Rwidth;
     k = (height / (rheight * 3)) * (width / (rwidth * 3));
-    int** maze = new int* [height];
-    for (int i = 0; i < height; i++)
-        maze[i] = new int[width];
     visibility = vis;
 }
+//Массив лабиринта типа int
 int** maze = new int* [height];
+//Массив лабиринта типа char для возврата на отрисовку
 char** mazeBuf = new char* [height];
+//Массив карты босса типа char
 char** bossMap = new char* [height];
+
+//Инициализация массивов карты
 void InitMaze()
 {
     maze = new int* [height];
@@ -54,11 +53,30 @@ void InitMaze()
     bossMap = new char* [height];
     for (int i = 0; i < height; i++)
         bossMap[i] = new char[width];
-
 }
-
-void MakeBossMap()
+//Очистка памяти с массивов карты
+void DestroyMap()
 {
+    for (int i = 0; i < height; i++)
+    {
+        delete[] maze[i];
+    }
+    delete[] maze;
+    for (int i = 0; i < height; i++)
+    {
+        delete[] mazeBuf[i];
+    }
+    delete[] mazeBuf;
+    for (int i = 0; i < height; i++)
+    {
+        delete[] bossMap[i];
+    }
+    delete[] bossMap;
+}
+//Создание карты босса
+void MakeBossMap() 
+{
+    //Заполнение всей карты размером с карты лабиринта пустотой(' ')
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
@@ -66,6 +84,7 @@ void MakeBossMap()
             bossMap[i][j] = ' ';
         }
     }
+    //Создание стенок у карты босса
     for (int i = 0; i < Bheight; i++)
     {
         for (int j = 0; j < Bheight; j++)
@@ -76,6 +95,7 @@ void MakeBossMap()
             bossMap[i][Bwidth - 1] = char(178);
         }
     }
+    //Создание колонн у карты босса
     for (int i = 2; i < Bheight; i += 5)
     {
         for (int j = 2; j < Bwidth; j += 5)
@@ -85,10 +105,10 @@ void MakeBossMap()
         }
     }
 }
-
-void Rendering(int XX, int YY, int visibility)
+//Создание зоны для отрисовки/возврата
+void MakeArea(int XX, int YY, int visibility, int& tempX, int& tempY, int& tempVisX, int& tempVisY)
 {
-    int tempX, tempY, tempVisX, tempVisY;
+    //Функция определяет зону радиусом visibility
     if (XX - visibility < 0)
         tempX = 0;
     else
@@ -105,6 +125,14 @@ void Rendering(int XX, int YY, int visibility)
         tempVisY = height - 1;
     else
         tempVisY = YY + visibility;
+}
+//Отображение определенной части карты в char массиве
+void Rendering(int XX, int YY, int visibility) 
+{
+    int tempX, tempY, tempVisX, tempVisY;
+    //Определяется зона для заполнения карты
+    MakeArea(XX, YY, visibility, tempX, tempY, tempVisX, tempVisY);
+    //Данная зона заполняется значением 1 и впоследствии будет отображена на отрисовке
     for (int i = tempX; i <= tempVisX; i++)
     {
         for (int j = tempY; j <= tempVisY; j++)
@@ -113,131 +141,149 @@ void Rendering(int XX, int YY, int visibility)
         }
     }
 }
-
-char** ReturnPartOfMap(int XX, int YY, int visibility)
+//Возврат определенной части карты
+char** ReturnPartOfMap(int XX, int YY, int visibility)  
 {
     int tempX, tempY, tempVisX, tempVisY;
-    if (XX - visibility < 0)
-        tempX = 0;
-    else
-        tempX = XX - visibility;
-    if (YY - visibility < 0)
-        tempY = 0;
-    else
-        tempY = YY - visibility;
-    if (XX + visibility + 1 >= width)
-        tempVisX = width - 1;
-    else
-        tempVisX = XX + visibility;
-    if (YY + visibility + 1 >= height)
-        tempVisY = height - 1;
-    else
-        tempVisY = YY + visibility;
-    int heightBuf = visibility * 2 + 1;
+    //Определяется зона для возврата карты
+    MakeArea(XX, YY, visibility, tempX, tempY, tempVisX, tempVisY);
+    //Высота зоны возврата карты
+    int heightBuf = tempVisX - tempX + 1;
+    //Ширина зоны возврата карты
+    int widthBuf = tempVisY - tempY + 1;
+    //Создание динамического массива для возврата части карты
     char** mazeBuftoRet = new char* [heightBuf];
-        for (int i = 0; i < heightBuf; i++)
-            mazeBuftoRet[i] = new char[heightBuf];
-    int k=0, m=0;
+    for (int i = 0; i < heightBuf; i++)
+        mazeBuftoRet[i] = new char[widthBuf];
+    int k = 0, m = 0;
+    //Заполнение этого массива
     for (int i = tempX; i <= tempVisX; i++, k++)
     {
         for (int j = tempY; j <= tempVisY; j++, m++)
         {
-            mazeBuftoRet[k][m] = mazeBuf[i][j];
+            if (maze[i][j] == -1)
+                mazeBuftoRet[k][m] = char(178);
+            else
+                mazeBuftoRet[k][m] = ' ';
         }
     }
     return mazeBuftoRet;
 }
-
-char** VisToRendererMaze()
+//Возврат карты босса
+char** ReturnBossMap()  
 {
+    return bossMap;
+}
+//Заполнение и возврат всей карты char
+bool** VisToRendererMaze() 
+{
+    //Создание динамического массива типа bool, где 1 - стена, 0 - проход
+    bool** buf = new bool* [height];
+    for (int i = 0; i < height; i++)
+        buf[i] = new bool[width];
+
+    //Если в массиве char mazeBuf элемент был заполнен 1, то этот элемент в массиве bool buf будет заполнен или 1, или 0
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
         {
             if (mazeBuf[i][j] == 1)
             {
-                switch (maze[i][j]) {
-                case wall: mazeBuf[i][j] = char(178); break;
-                case pass: mazeBuf[i][j] = ' '; break;
-                default: mazeBuf[i][j] = ' '; break;
+                if (maze[i][j] == wall)
+                {
+                    buf[i][j] = 1;  //1 - стена
+                }
+                else
+                {
+                    buf[i][j] = 0; //0 - не стена
                 }
             }
         }
     }
-    return mazeBuf;
+    return buf;
 }
-char** VisToRendererBoss()
+//Выход из тупиков при создании лабиринта
+int deadend(int x, int y) 
 {
-    return bossMap;
-}
-int deadend(int x, int y) {
-    int a = 0;
+    //Количество сторон, в которые нельзя пойти, то есть уже есть проходы
+    int ways = 0;
 
+    //Проверка влево
     if (x != 1) {
-        if (maze[y][x - 2] == room ||
-            maze[y][x - 2] == pass)
-            a += 1;
+        if (maze[y][x - 2] == pass or maze[y][x - 2] == room)
+            ways += 1;
     }
-    else a += 1;
+    else ways += 1;
 
+    //Проверка вверх
     if (y != 1) {
-        if (maze[y][x - 2] == room ||
-            maze[y - 2][x] == pass)
-            a += 1;
+        if (maze[y - 2][x] == pass or maze[y][x - 2] == room)
+            ways += 1;
     }
-    else a += 1;
+    else ways += 1;
 
+    //Проверка вправо
     if (x != width - 2) {
-        if (maze[y][x - 2] == room ||
-            maze[y][x + 2] == pass)
-            a += 1;
+        if (maze[y][x + 2] == pass or maze[y][x - 2] == room)
+            ways += 1;
     }
-    else a += 1;
+    else ways += 1;
 
+    //Проверка вниз
     if (y != height - 2) {
-        if (maze[y][x - 2] == room ||
-            maze[y + 2][x] == pass)
-            a += 1;
+        if (maze[y + 2][x] == pass or maze[y][x - 2] == room)
+            ways += 1;
     }
-    else a += 1;
+    else ways += 1;
 
-    if (a == 4)
+    //Если ни в какую из 4 сторон нельзя пойти, возвращаем правду
+    if (ways == 4)
         return 1;
     else
         return 0;
 }
 int xx, yy;
 
-void mazemake() {
-    int x, y, c, a;
+//Создание лабиринта с комнатами
+void mazemake()  
+{
+    //х - координата х, y - координата y
+    int x, y, orient, a;
     bool b, swap = 1;
+    // Массив карты заполняется стенами
     for (int i = 0; i < height; i++)
         for (int j = 0; j < width; j++)
             maze[i][j] = wall;
     x = 3; y = 3; a = 0;
     while (a < 10000) {
         maze[y][x] = pass; a++;
+        //Бесконечный цикл, который прерывается только тупиком
         while (1) {
-            c = rand() % 4;
-            switch (c) {
+            //Рандомное определение направления
+            orient = rand() % 4;
+            switch (orient) {
+            //Вверх
             case 0: if (y != 1)
                 if (maze[y - 2][x] == wall) {
                     maze[y - 1][x] = pass;
                     maze[y - 2][x] = pass;
                     y -= 2;
                 }
+            //Вниз
             case 1: if (y != height - 2)
                 if (maze[y + 2][x] == wall) {
                     maze[y + 1][x] = pass;
                     maze[y + 2][x] = pass;
                     y += 2;
                 }
+            //Влево
             case 2: if (x != 1)
                 if (maze[y][x - 2] == wall) {
                     maze[y][x - 1] = pass;
                     maze[y][x - 2] = pass;
                     x -= 2;
                 }
+            //Вправо
             case 3: if (x != width - 2)
                 if (maze[y][x + 2] == wall) {
                     maze[y][x + 1] = pass;
@@ -245,10 +291,11 @@ void mazemake() {
                     x += 2;
                 }
             }
+            //Прерываем цикл, если нельзя пойти ни в одно из направлений
             if (deadend(x, y))
                 break;
         }
-
+        //Если мы в тупике, то находим новую рандомную точку, которая еще не является проходом и идем от нее
         if (deadend(x, y))
             do {
                 x = 2 * (rand() % ((width - 1) / 2)) + 1;
@@ -285,12 +332,12 @@ void mazemake() {
                 for (int j = (x - rwidth / 2); j < (x + rwidth / 2 + 1); j++)
                     maze[i][j] = room;
 
-            c = rand() % 4;
+            orient = rand() % 4;
 
-            if (c == 0) maze[y + rheight / 2 + 1][x - rwidth / 2 + 2 * (rand() % (rwidth / 2 + 1))] = room;
-            if (c == 1) maze[y - rheight / 2 - 1][x - rwidth / 2 + 2 * (rand() % (rwidth / 2 + 1))] = room;
-            if (c == 2) maze[y - rheight / 2 + 2 * (rand() % (rheight / 2 + 1))][x + rwidth / 2 + 1] = room;
-            if (c == 3) maze[y - rheight / 2 + 2 * (rand() % (rheight / 2 + 1))][x - rwidth / 2 - 1] = room;
+            if (orient == 0) maze[y + rheight / 2 + 1][x - rwidth / 2 + 2 * (rand() % (rwidth / 2 + 1))] = room;
+            if (orient == 1) maze[y - rheight / 2 - 1][x - rwidth / 2 + 2 * (rand() % (rwidth / 2 + 1))] = room;
+            if (orient == 2) maze[y - rheight / 2 + 2 * (rand() % (rheight / 2 + 1))][x + rwidth / 2 + 1] = room;
+            if (orient == 3) maze[y - rheight / 2 + 2 * (rand() % (rheight / 2 + 1))][x - rwidth / 2 - 1] = room;
 
             if (swap) {
                 rheight += rwidth;
@@ -301,11 +348,15 @@ void mazemake() {
     }
 
     xx = ((rand() % height) & 65534) + 1, yy = ((rand() % width) & 65534) + 1;
-
+    while (maze[xx][yy] == room)
+    {
+        xx = ((rand() % height) & 65534) + 1, yy = ((rand() % width) & 65534) + 1;
+    }
 }
-
-void Wave(int x, int y, int n = 1)
+//Запуск волнового алгоритма для определения удаленности точки на карте от спавна
+void Wave(int x, int y, int n = 1) 
 {
+    //Влево, вправо, вверх, вниз
     int left = x - 1, right = x + 1, up = y - 1, down = y + 1;
     maze[x][y] = n;
     if (left > 0) {
@@ -325,27 +376,12 @@ void Wave(int x, int y, int n = 1)
             Wave(x, down, n + 1);
     }
 }
-
-
-void visual() {
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++)
-            switch (maze[i][j]) {
-            case wall: cout << char(178) << char(178); break;
-            case pass: cout << " " << " "; break;
-            case room: cout << " " << " "; break;
-                // case -1: cout << "ST"; break;
-            case End: cout << "EN"; break;
-            default: cout << (maze[i][j] < 10 ? " " : "") << maze[i][j]; break;
-            }
-        cout << endl;
-    }
-    cout << endl;
-}
-
-int FindMin(int x, int y)
+//Нахождение минимального значения в комнате
+int FindMinInRoom(int x, int y)
 {
+    //Изначально минимальное значение - любая точка в комнате
     int min = maze[y][x];
+    //Перебором всех элементов в комнате находим наименьшее
     for (int i = y; i < rheight + y; i++)
     {
         for (int ii = x; ii < rwidth + x; ii++)
@@ -358,17 +394,20 @@ int FindMin(int x, int y)
     }
     return min;
 }
-
-void FindRooms()
+//Нахождение комнат для установления в них одного уровня
+void FindRooms() 
 {
+    //Минимальное значение в комнате, координата x, координата y
     int min, x, y;
-    bool isBreak = false;
+    //Первый цикл имеет столько итераций, сколько всего комнат на карте
     for (int kk = 0; kk < k; kk++)
     {
+        //Второй и третий цикл ищет комнаты, ходя по карты через каждые 4 элементы 
         for (int i = 4; i < height; i += 4)
         {
             for (int ii = 4; ii < width; ii += 4)
             {
+                //Если текущее значение, более правое и более верхнее значения не являются стеной, то это комната
                 if (maze[i][ii] != wall)
                 {
                     y = i - 1, x = ii - 1;
@@ -376,26 +415,27 @@ void FindRooms()
                         y = i - 3;
                     if (maze[i][ii - 2] != wall)
                         x = ii - 3;
-                    min = FindMin(x, y);
-                    isBreak = true;
-                    for (int k = y; k < rheight + y; k++)
+                    min = FindMinInRoom(x, y);
+                    //Заполняем комнату одним, наименьшим в ней значением
+                    for (int k = y; k <= rheight + y; k++)
                     {
-                        for (int m = x; m < rwidth + x; m++)
+                        for (int m = x; m <= rwidth + x; m++)
                         {
                             maze[k][m] = min;
                         }
                     }
-                    break;
                 }
             }
         }
     }
 
 }
-
-int FindMax()
+//Нахождение максимального значения в лабиринте (максимальная удаленность от спавна)
+int FindMax() 
 {
+    //Изначально наибольшее значение на карте - первый элемент
     int max = maze[0][0];
+    //Перебором всех элементов находим наибольшее значение
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
@@ -408,53 +448,54 @@ int FindMax()
     }
     return max;
 }
-
-void FindStFin()
+//Нахождение финиша
+void FindFin() 
 {
     int max = FindMax();
+    //Находим финиш, обозначаем его концом и заканчиваем цикл
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
         {
-            if (maze[i][j] == 1)
-            {
-                maze[i][j] = Start;
-            }
             if (maze[i][j] == max)
             {
                 maze[i][j] = End;
-                max = -99999;
+                break;
             }
         }
     }
 }
-void MazeBufInit()
+//Передача уровня моба в зависимости от уровня точки на карте
+int lvlMob(int X, int Y, int maxMapLvl, int maxMobLvl) 
 {
-    for (int i = 0; i < height; i++)
-    {
-        for (int j = 0; j < width; j++)
-        {
-            switch (maze[i][j]) {
-            case wall: mazeBuf[i][j] = char(178); break;
-            case Start:mazeBuf[i][j] = 'S'; break;
-            case End:mazeBuf[i][j] = 'E'; break;
-            default: mazeBuf[i][j] = ' '; break;
-            }
-        }
-    }
-
-}
-
-void lvlMob(int X, int Y, int maxMapLvl, int maxMobLvl)
-{
+    //Уровень моба
     int MobLvl;
-    int mapLvl = maze[x][y];
+    //Уровень на карте
+    int mapLvl = maze[X][Y];
+    //Процент уровня карты в зависимости от наибольшего значения на карте
     double LvlPercent = mapLvl / maxMapLvl;
+    //Нахождение уровня моба на текущей точки карты
     MobLvl = maxMobLvl * LvlPercent;
-    //функция артема на создание моба
+    return MobLvl;
 }
 
-bool IsPainted(int x, int y)
+//Возврат уровня определенной точки на карте
+int MapLvl(int X, int Y) 
+{
+    return maze[X][Y];
+}
+//Проверка, является ли точка стеной
+bool IsWall(int x, int y) 
+{
+    bool iswall;
+    if (maze[x][y] == -1)
+        iswall = true;
+    else
+        iswall = false;
+    return iswall;
+}
+//Проверка, закрашена ли точка
+bool IsPainted(int x, int y) 
 {
     bool ispainted;
     if (maze[x][y] >= 1)
@@ -463,8 +504,8 @@ bool IsPainted(int x, int y)
         ispainted = true;
     return ispainted;
 }
-
-COORD Finish()
+//Возврат координат финиша
+COORD FindFinish() 
 {
     COORD end = { 0,0 };
     for (int i = 0; i < height; i++)
@@ -480,76 +521,75 @@ COORD Finish()
     }
     return end;
 }
-
-struct Templ
+//Возврат координат старта
+COORD FindStart() 
 {
-    int count;
-    int* pointer;
-};
-struct MAP
-{
-    int size;
-    char* MAP_char;
-    int* MAP_int;
-};
-void GetMap(Templ)
-{
-
-}
-
-Templ GET_MAPS() {
-    Templ ttt_maps;
-    ttt_maps.count = map_count;
-    ttt_maps.pointer = reinterpret_cast<int*>(maps);
-    return ttt_maps;
-}
-
-void DownloadMap()
-{
-    Templ ttt = GET_MAPS();
-    maze = (int*)ttt.pointer;
-    for (int i = 0; i < width * height; i++)
-    {
-        maze[i % width][i / width] = (int*)ttt.pointer[i];
-    }
-    char* rrr = (char*)ttt.pointer + sizeof(int) * (height * width);
-    for (int i = 0; i < width * height; i++)
-    {
-        maze[i % width][i / width] = rrr[i];
-    }
-}
-
-void MakeMap()
-{
-    srand(time(NULL));
-    Init(21, 31, 5, 5, 7);
-    InitMaze();
-    MakeBossMap();
-    mazemake();
-    Wave(xx, yy);
-    FindRooms();
-    FindStFin();
-    MazeBufInit();
-}
-
-
-int main() {
-
-    MakeMap();
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            cout << bossMap[i][j] << bossMap[i][j];
-        }
-
-        cout << endl;
-    }
-    cout << endl;
+    COORD st = { 0,0 };
     for (int i = 0; i < height; i++)
     {
         for (int j = 0; j < width; j++)
         {
-            cout << mazeBuf[i][j] << mazeBuf[i][j];
+            if (maze[i][j] == Start)
+            {
+                st.X = i;
+                st.Y = j;
+            }
         }
+    }
+    return st;
+}
+//Сохранение карты
+MAP GET_MAPMAZE_MAP() {  
+    //Создание переменной типа MAP
+    MAP MAP_maps;
+    //Создание переменной равной размеру карты
+    int ttt_size = width * height;
+    MAP_maps.size = ttt_size;
+    //Выделяем память под сохранение карты
+    MAP_maps.MAP_int = new int[ttt_size];
+    MAP_maps.MAP_char = new char[ttt_size];
+    //Сохраняем каждый элемент карты
+    for (int i = 0; i < ttt_size; i++)
+    {
+        MAP_maps.MAP_int[i] = maze[i % width][i / width];
+        MAP_maps.MAP_char[i] = mazeBuf[i % width][i / width];
+    }
+    return MAP_maps;
+}
+//Загрузка сохраненной карты
+void DownloadMap_MAP() 
+{
+    //Создаем переменную типа MAP и получаем значение от функциии GET_MAPMAZES
+    MAP ttt_maps = GET_MAPMAZES();
+    //Заполняем каждый элемент карты
+    for (int i = 0; i < width * height; i++)
+    {
+        maze[i % width][i / width] = ttt_maps.MAP_int[i];
+        mazeBuf[i % width][i / width] = ttt_maps.MAP_char[i];
+    }
+}
+//Создание карты, где вызываются все необходимые для создания карты функции
+void MakeMap() 
+{
+    MakeBossMap();
+    mazemake();
+    Wave(xx, yy);
+    FindRooms();
+    FindFin();
+}
+
+void Visual() {
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++)
+            switch (maze[i][j]) {
+            case wall: cout << char(178) << char(178); break;
+            case pass: cout << " " << " "; break;
+            case room: cout << " " << " "; break;
+                // case -1: cout << "ST"; break;
+            case End: cout << "EN"; break;
+            default: cout << "  "; break;
+            }
         cout << endl;
     }
+    cout << endl;
 }
